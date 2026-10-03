@@ -1,5 +1,5 @@
 """颜色算法：灰度、反转、阈值、直方图均衡、通道平衡、色调分离、伪彩色。"""
-from PIL import Image, ImageChops, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageFilter, ImageMath, ImageOps
 
 from . import util
 
@@ -10,7 +10,9 @@ def grayscale(image, params):
     rgb = util.ensure_rgb(image)
     if mode == "average":
         r, g, b = rgb.split()
-        avg = ImageChops.add(ImageChops.add(r, g), b).point(lambda v: v // 3)
+        # ImageChops.add 会逐次截断到 255，亮部会在除以 3 前被压平；
+        # 用 ImageMath 在整数表达式中先求和，避免中间结果饱和。
+        avg = ImageMath.eval("(r + g + b) // 3", r=r, g=g, b=b)
         return avg.convert("L")
     if mode == "channel":
         ch = params.get("channel", "r")
